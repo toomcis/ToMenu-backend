@@ -1,6 +1,6 @@
 {
   "source": "https://lv.namenu.sk/",
-  "scraped_at": "2026-03-05T10:48:42.934109",
+  "scraped_at": "2026-03-05T10:30:38.571319",
   "day": "Štvrtok 05.03.",
   "restaurant_count": 29,
   "restaurants": [
@@ -109,7 +109,7 @@
         },
         {
           "type": "main",
-          "name": "Pork Poutine",
+          "name": "Pork Poutine putine",
           "description": "Chrumkavé domáce hranolky preliate bohatou demi-glace omáčkou a doplnené šťavnatým trhaným bravčovým, ktoré dodáva hlbokú a mäsitú chuť. Jarná cibuľka prináša sviežosť, zatiaľ čo smažená cibuľka pridáva chrumkavý a aromatický kontrast– moderný twist na kanadskú klasiku",
           "weight": "550 g",
           "price_eur": 8.5,
@@ -188,7 +188,7 @@
         },
         {
           "type": "main",
-          "name": "Plnený bravčový rezeň v cestíčku, ½ americké zemiaky, ½ ryža, šalát",
+          "name": "Plnený bravčový rezeň v cestíčku klobása, feferóny, ½ americké zemiaky, ½ ryža, šalát",
           "description": null,
           "weight": "120g",
           "price_eur": null,
@@ -357,7 +357,7 @@
         },
         {
           "type": "main",
-          "name": "Pizza na želanie",
+          "name": "Pizza na želanie tomato, syr, šunka + jedna príloha",
           "description": null,
           "weight": "500g",
           "price_eur": 7.5,
@@ -591,7 +591,7 @@
       "phone": "0915 092 404",
       "delivery": true,
       "info": "",
-      "menu_price": 2.5,
+      "menu_price": null,
       "menu": [
         {
           "type": "soup",
@@ -628,7 +628,7 @@
         },
         {
           "type": "dessert",
-          "name": "Malinový chia koláč, A:",
+          "name": "Malinový chia koláč",
           "description": null,
           "weight": null,
           "price_eur": null,
@@ -660,7 +660,7 @@
       "phone": "0903 79 79 87",
       "delivery": false,
       "info": "",
-      "menu_price": 6.65,
+      "menu_price": null,
       "menu": [
         {
           "type": "soup",
@@ -678,13 +678,11 @@
         },
         {
           "type": "soup",
-          "name": "Mexická fazuľová s klobásou",
+          "name": "Mexická fazuľová s klobásou 1",
           "description": null,
           "weight": "0,33 l",
           "price_eur": null,
-          "allergens": [
-            1
-          ],
+          "allergens": [],
           "nutrition": null,
           "raw": "B: 0,33 l Mexická fazuľová s klobásou 1"
         },
@@ -760,13 +758,11 @@
         },
         {
           "type": "main",
-          "name": "Poke bowl s kurac.mäsom/ryža,čerstvý špenát.list,mrkva,edamame,sézam,teriyaki,rajčiny,avokádo",
+          "name": "Poke bowl s kurac.mäsom/ryža,čerstvý špenát.list,mrkva,edamame,sézam,teriyaki,rajčiny,avokádo/ 11",
           "description": null,
           "weight": "400g",
           "price_eur": null,
-          "allergens": [
-            11
-          ],
+          "allergens": [],
           "nutrition": null,
           "raw": "6. 400g Poke bowl s kurac.mäsom/ryža,čerstvý špenát.list,mrkva,edamame,sézam,teriyaki,rajčiny,avokádo/ 11"
         },
@@ -789,7 +785,7 @@
       "phone": "0915 289 893",
       "delivery": true,
       "info": "",
-      "menu_price": 6.99,
+      "menu_price": null,
       "menu": [
         {
           "type": "soup",
@@ -890,7 +886,7 @@
       "phone": "",
       "delivery": false,
       "info": "",
-      "menu_price": 2.9,
+      "menu_price": null,
       "menu": [
         {
           "type": "main",
@@ -960,7 +956,7 @@
       "phone": "",
       "delivery": false,
       "info": "",
-      "menu_price": 2.0,
+      "menu_price": null,
       "menu": [
         {
           "type": "soup",
@@ -1084,7 +1080,7 @@
         },
         {
           "type": "main",
-          "name": "Cviklové rizoto & kuracia plnená roláda /šunka, feta, sušená paradajka/, parmezán",
+          "name": "Cviklové rizoto & kuracia plnená roláda /šunka, feta, sušená paradajka/, parmezán 7",
           "description": null,
           "weight": "300 g",
           "price_eur": 7.3,
@@ -1125,7 +1121,7 @@
       "phone": "0910 940 535",
       "delivery": true,
       "info": "",
-      "menu_price": 7.0,
+      "menu_price": null,
       "menu": [
         {
           "type": "soup",
@@ -1155,7 +1151,7 @@
         },
         {
           "type": "main",
-          "name": "Hortobádska hovädzia pečienka, slovenská ryža",
+          "name": "Hortobádska hovädzia pečienkahovädzie zadné, slovenská ryža",
           "description": null,
           "weight": "120g",
           "price_eur": null,
@@ -1202,7 +1198,7 @@
       "phone": "036 / 3700 300",
       "delivery": false,
       "info": "",
-      "menu_price": 2.3,
+      "menu_price": null,
       "menu": [
         {
           "type": "soup",
@@ -1411,7 +1407,7 @@
       "phone": "0917 049 940",
       "delivery": true,
       "info": "",
-      "menu_price": 7.0,
+      "menu_price": null,
       "menu": [
         {
           "type": "soup",
@@ -1441,7 +1437,7 @@
         },
         {
           "type": "main",
-          "name": "Pácovaný kurací rezeň v trojobale, zemiaková kaša, mrkvový s jablkami",
+          "name": "Pácovaný kurací rezeň syr,smotana,cesnak v trojobale, zemiaková kaša, mrkvový s jablkami",
           "description": null,
           "weight": "150g",
           "price_eur": null,
@@ -1511,7 +1507,7 @@
       "phone": "0911 045 696",
       "delivery": false,
       "info": "",
-      "menu_price": 1.25,
+      "menu_price": null,
       "menu": [
         {
           "type": "soup",
@@ -1579,7 +1575,7 @@
       "phone": "+421 366315346",
       "delivery": false,
       "info": "",
-      "menu_price": 7.8,
+      "menu_price": null,
       "menu": [
         {
           "type": "soup",
@@ -1718,7 +1714,7 @@
         },
         {
           "type": "main",
-          "name": "Plnený kurací rezeň v panko strúhanke, zemiaková kaša, šalát",
+          "name": "Plnený kurací rezeň v panko strúhankeniva, šunka, kápia, zemiaková kaša, šalát",
           "description": null,
           "weight": "120g",
           "price_eur": 7.3,
@@ -1784,7 +1780,7 @@
         },
         {
           "type": "main",
-          "name": "ø 26 cm Pizza",
+          "name": "ø 26 cm Pizza syr, šunka + 2 ingrediencie podľa vlastného výberu",
           "description": null,
           "weight": "360g",
           "price_eur": 7.0,
@@ -1805,7 +1801,7 @@
       "phone": "0950 573 513",
       "delivery": true,
       "info": "",
-      "menu_price": 3.9,
+      "menu_price": null,
       "menu": [
         {
           "type": "soup",
@@ -1822,7 +1818,7 @@
         },
         {
           "type": "main",
-          "name": "Babičkina zemiaková so sušenými hubami a zeleninou / *",
+          "name": "Babičkina zemiaková so sušenými hubami a zeleninou VEGAN,9 / *",
           "description": null,
           "weight": null,
           "price_eur": 4.1,
@@ -1861,7 +1857,7 @@
       "phone": "0948 860 061",
       "delivery": true,
       "info": "",
-      "menu_price": 7.0,
+      "menu_price": null,
       "menu": [
         {
           "type": "soup",
@@ -1950,12 +1946,12 @@
       "phone": "0/100/125/120",
       "delivery": false,
       "info": "",
-      "menu_price": 5.9,
+      "menu_price": null,
       "menu": [
         {
           "type": "soup",
           "name": "Hovädzí vývar s fridatovými rezancami",
-          "description": null,
+          "description": "120125/120 g Kuracie prsia s jogurtovou krustou, ½ ryža, ½ opekané zemiaky, mrkvovo-jablkový šalát 12060 g Syrovo-šunkové špízy vyprážané, zemiakové hranolky, tatárska omáčka",
           "weight": "0,33 l",
           "price_eur": null,
           "allergens": [
@@ -1965,26 +1961,6 @@
           ],
           "nutrition": null,
           "raw": "0,33 l Hovädzí vývar s fridatovými rezancami (1,3,9)"
-        },
-        {
-          "type": "main",
-          "name": "Kuracie prsia s jogurtovou krustou, ½ ryža, ½ opekané zemiaky, mrkvovo-jablkový šalát",
-          "description": null,
-          "weight": "120/100/125/120 g",
-          "price_eur": null,
-          "allergens": [],
-          "nutrition": null,
-          "raw": "120/100/125/120 g Kuracie prsia s jogurtovou krustou, ½ ryža, ½ opekané zemiaky, mrkvovo-jablkový šalát (1,7)"
-        },
-        {
-          "type": "main",
-          "name": "Syrovo-šunkové špízy vyprážané, zemiakové hranolky, tatárska omáčka",
-          "description": null,
-          "weight": "120/200/60 g",
-          "price_eur": null,
-          "allergens": [],
-          "nutrition": null,
-          "raw": "120/200/60 g Syrovo-šunkové špízy vyprážané, zemiakové hranolky, tatárska omáčka (1,3,7)"
         }
       ]
     },
@@ -1995,7 +1971,7 @@
       "phone": "0907 732 192",
       "delivery": true,
       "info": "",
-      "menu_price": 7.0,
+      "menu_price": 10.3,
       "menu": [
         {
           "type": "main",
@@ -2257,11 +2233,11 @@
       "phone": "0910 58 58 58",
       "delivery": true,
       "info": "",
-      "menu_price": 6.5,
+      "menu_price": null,
       "menu": [
         {
           "type": "soup",
-          "name": "Hokaido s krutónmi",
+          "name": "Hokaido s krutónmi obilniny, mlieko",
           "description": null,
           "weight": null,
           "price_eur": null,
@@ -2271,7 +2247,7 @@
         },
         {
           "type": "main",
-          "name": "Bravčový plátok Mexiko, dusená ryža",
+          "name": "Bravčový plátok Mexiko, dusená ryža obilniny, mlieko",
           "description": null,
           "weight": "150g",
           "price_eur": null,
@@ -2281,7 +2257,7 @@
         },
         {
           "type": "main",
-          "name": "Šošovicový prívarok s pečenou klobásou, chlieb",
+          "name": "Šošovicový prívarok s pečenou klobásou, chlieb obilniny, mlieko",
           "description": null,
           "weight": "150g",
           "price_eur": null,
@@ -2291,7 +2267,7 @@
         },
         {
           "type": "main",
-          "name": "Vyprážané šampiňóny, pečené zemiaky, tatárska omáčka",
+          "name": "Vyprážané šampiňóny, pečené zemiaky, tatárska omáčka obilniny, mlieko, vajce, horčica",
           "description": null,
           "weight": "300g",
           "price_eur": null,
@@ -2301,7 +2277,7 @@
         },
         {
           "type": "main",
-          "name": "Grilovaný pološtiepok, hranolky, tatárska omáčka",
+          "name": "Grilovaný pološtiepok, hranolky, tatárska omáčka mlieko, vajce, horčica",
           "description": null,
           "weight": "120g",
           "price_eur": null,
@@ -2311,7 +2287,7 @@
         },
         {
           "type": "main",
-          "name": "Námornícky hovädzí guláš, tarhoňa, uhorka",
+          "name": "Námornícky hovädzí guláš, tarhoňa, uhorka obilniny, vajce",
           "description": null,
           "weight": "120g",
           "price_eur": null,
@@ -2328,7 +2304,7 @@
       "phone": "0948 37 69 29",
       "delivery": true,
       "info": "",
-      "menu_price": 7.0,
+      "menu_price": null,
       "menu": [
         {
           "type": "soup",
@@ -2358,7 +2334,7 @@
         },
         {
           "type": "main",
-          "name": "Vyprážaný kurací rezeň plnený, šťuchané zemiaky s cibuľou a cvikla",
+          "name": "Vyprážaný kurací rezeň plnený syr,šunka,šampiňóny, šťuchané zemiaky s cibuľou a cvikla",
           "description": null,
           "weight": "150g",
           "price_eur": 7.0,
@@ -2400,7 +2376,7 @@
         },
         {
           "type": "main",
-          "name": "Šalátový tanier podľa vlastného výberu, dressing",
+          "name": "Šalátový tanier podľa vlastného výberu, dressing viď. šalátová karta",
           "description": "Salad plate of your choice, dressing (see salad card)",
           "weight": null,
           "price_eur": 7.0,
@@ -2410,7 +2386,7 @@
         },
         {
           "type": "main",
-          "name": "Cestoviny s kuracími prsiami na špenáte a parmezán",
+          "name": "Cestoviny Tagliatelle s kuracími prsiami na špenáte a parmezán",
           "description": null,
           "weight": "400 g",
           "price_eur": 7.0,
@@ -2471,47 +2447,17 @@
       "phone": "0915266366",
       "delivery": true,
       "info": "",
-      "menu_price": 5.5,
+      "menu_price": null,
       "menu": [
         {
           "type": "main",
-          "name": "Grécky šalát + pizza štangla",
-          "description": null,
+          "name": "A.Grécky šalát + pizza štangla",
+          "description": "B.Šunkovo jemno pikantné cestoviny C.Vyprážaný kurací rezeň, hranolky,kečup D.Pizza Hawai",
           "weight": null,
           "price_eur": 5.5,
           "allergens": [],
           "nutrition": null,
           "raw": "A.Grécky šalát + pizza štangla 5,50€"
-        },
-        {
-          "type": "main",
-          "name": "Šunkovo jemno pikantné cestoviny",
-          "description": null,
-          "weight": null,
-          "price_eur": 5.5,
-          "allergens": [],
-          "nutrition": null,
-          "raw": "B.Šunkovo jemno pikantné cestoviny 5,50€"
-        },
-        {
-          "type": "main",
-          "name": "Vyprážaný kurací rezeň, hranolky,kečup",
-          "description": null,
-          "weight": null,
-          "price_eur": 5.5,
-          "allergens": [],
-          "nutrition": null,
-          "raw": "C.Vyprážaný kurací rezeň, hranolky,kečup 5,50€"
-        },
-        {
-          "type": "main",
-          "name": "Pizza Hawai",
-          "description": null,
-          "weight": null,
-          "price_eur": 7.0,
-          "allergens": [],
-          "nutrition": null,
-          "raw": "D.Pizza Hawai 7,00€"
         },
         {
           "type": "main",
@@ -2532,24 +2478,21 @@
       "phone": "036 6312 965",
       "delivery": true,
       "info": "",
-      "menu_price": 2.5,
+      "menu_price": 11.0,
       "menu": [
         {
           "type": "soup",
-          "name": "Rajčinová polievka so syrom a krutónmi 1,7 – vegánska verzia: s rastlinným syrom",
+          "name": "Rajčinová polievka so syrom a krutónmi 1,7 – vegánska verzia: s rastlinným syrom 1",
           "description": null,
           "weight": "0,33l",
           "price_eur": null,
-          "allergens": [
-            1,
-            7
-          ],
+          "allergens": [],
           "nutrition": null,
           "raw": "Rajčinová polievka so syrom a krutónmi 1,7 (0,33l)– vegánska verzia: s rastlinným syrom 1"
         },
         {
           "type": "main",
-          "name": "Pečená kačica s dusenou kapustou a domácou kysnutou knedľou",
+          "name": "Pečená kačica s dusenou kapustou a domácou kysnutou knedľou 1,3,7 4 kačice, 150",
           "description": null,
           "weight": "200g",
           "price_eur": 8.4,
@@ -2565,11 +2508,7 @@
           "description": null,
           "weight": "100g",
           "price_eur": 7.4,
-          "allergens": [
-            1,
-            3,
-            7
-          ],
+          "allergens": [],
           "nutrition": null,
           "raw": "2. Bravčové fašírky so zemiakovou kašou a rajčinovým šalátom 1,3,7 (150, 200, 100g) 7,40 EUR"
         },
@@ -2579,10 +2518,7 @@
           "description": null,
           "weight": "200g",
           "price_eur": 7.4,
-          "allergens": [
-            1,
-            7
-          ],
+          "allergens": [],
           "nutrition": null,
           "raw": "3. Kurací paprikáš s krupicovými haluškami 1,7 (120, 200g) 7,40 EUR"
         },
@@ -2592,18 +2528,13 @@
           "description": null,
           "weight": "400g",
           "price_eur": 7.4,
-          "allergens": [
-            1,
-            3,
-            7,
-            8
-          ],
+          "allergens": [],
           "nutrition": null,
           "raw": "4. Perky naplnené slivkovým lekvárom, s maslom a orechovou posýpkou 1,3,7,8 (400g) 7,40 EUR"
         },
         {
           "type": "main",
-          "name": "Bravčový steak so šunkou a volským okom, so zemiakovými hranolčekmi",
+          "name": "Bravčový steak so šunkou a volským okom, so zemiakovými hranolčekmi 3",
           "description": null,
           "weight": "200g",
           "price_eur": 12.4,
@@ -2630,72 +2561,55 @@
       "phone": "0903 483 693",
       "delivery": true,
       "info": "",
-      "menu_price": 2.7,
+      "menu_price": null,
       "menu": [
         {
           "type": "soup",
-          "name": "Paradajková s písmenkami",
+          "name": "Paradajková s písmenkami • 1,3 | | v cene menu",
           "description": null,
           "weight": "0,33l",
           "price_eur": 2.7,
-          "allergens": [
-            1,
-            3
-          ],
+          "allergens": [],
           "nutrition": null,
           "raw": "Paradajková s písmenkami • 0,33l 1,3 | 2,70 € | v cene menu"
         },
         {
           "type": "main",
-          "name": "Kuracie pečienky restované na cibuľke, podávané s dusenou ryžou a kyslými uhorkami",
+          "name": "Kuracie pečienky restované na cibuľke, podávané s dusenou ryžou a kyslými uhorkami • 1",
           "description": null,
           "weight": "150/200g",
           "price_eur": 7.2,
-          "allergens": [
-            1
-          ],
+          "allergens": [],
           "nutrition": null,
           "raw": "1. Kuracie pečienky restované na cibuľke, podávané s dusenou ryžou a kyslými uhorkami • 150/200g 1 | 7,20 €"
         },
         {
           "type": "main",
-          "name": "Ragú z klokanieho stehna, podávané so zemiakovou knedľou",
+          "name": "Ragú z klokanieho stehna šampiňóny, červené víno, koreňová zelenina, podávané so zemiakovou knedľou • 1,3,9",
           "description": null,
           "weight": "120/200g",
           "price_eur": 8.9,
-          "allergens": [
-            1,
-            3,
-            9
-          ],
+          "allergens": [],
           "nutrition": null,
           "raw": "2. Ragú z klokanieho stehna (šampiňóny, červené víno, koreňová zelenina), podávané so zemiakovou knedľou • 120/200g 1,3,9 | 8,90 €"
         },
         {
           "type": "main",
-          "name": "Čerstvý zeleninový šalát s vyprážanými kalamárovými krúžkami v cestíčku, citrónovým dresingom a domácim pečivom",
+          "name": "Čerstvý zeleninový šalát s vyprážanými kalamárovými krúžkami v cestíčku, citrónovým dresingom a domácim pečivom • 1,3,7,14",
           "description": null,
           "weight": "350g",
           "price_eur": 7.2,
-          "allergens": [
-            1,
-            3,
-            7,
-            14
-          ],
+          "allergens": [],
           "nutrition": null,
           "raw": "3. Čerstvý zeleninový šalát s vyprážanými kalamárovými krúžkami v cestíčku, citrónovým dresingom a domácim pečivom • 350g 1,3,7,14 | 7,20 €"
         },
         {
           "type": "main",
-          "name": "Pizza – Smotanový základ, mozzarella, klobása, mix olív, cibuľa",
+          "name": "Pizza – Smotanový základ, mozzarella, klobása, mix olív, cibuľa • 1,7",
           "description": null,
           "weight": "535g",
           "price_eur": 7.6,
-          "allergens": [
-            1,
-            7
-          ],
+          "allergens": [],
           "nutrition": null,
           "raw": "4. Pizza – Smotanový základ, mozzarella, klobása, mix olív, cibuľa • 535g 1,7 | 7,60 €"
         }

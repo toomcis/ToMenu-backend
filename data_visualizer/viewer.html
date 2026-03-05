@@ -95,6 +95,17 @@
   .badge-count       { background: #1a1a2e; color: #6a9fd8; border: 1px solid #2a3a5e; }
   .badge-price       { background: #1e2a1e; color: #7ec8a0; border: 1px solid #2a3a2a; font-size: 11px; }
 
+  .restaurant-info {
+    font-size: 11px;
+    color: #7a9a7a;
+    background: #111a11;
+    border: 1px solid #1e2e1e;
+    border-radius: 4px;
+    padding: 5px 10px;
+    margin: 8px 0 4px;
+  }
+  .restaurant-info::before { content: "ℹ "; opacity: 0.6; }
+
   .restaurant-address { font-size: 11px; color: #555; flex: 1; text-align: right; }
 
   .chevron { color: #444; font-size: 12px; transition: transform 0.2s; }
@@ -149,6 +160,28 @@
   .weight.missing { color: #2a2a2a; }
   .allergens { color: #a0a0a0; font-size: 11px; }
   .allergens.missing { color: #2a2a2a; }
+
+  /* nutrition bar */
+  .nutrition {
+    display: flex;
+    gap: 8px;
+    margin-top: 4px;
+    flex-wrap: wrap;
+  }
+  .nutr-pill {
+    font-size: 10px;
+    background: #1a1e1a;
+    border: 1px solid #2a3a2a;
+    color: #6a9a6a;
+    padding: 1px 5px;
+    border-radius: 3px;
+    white-space: nowrap;
+  }
+  .nutr-kcal {
+    background: #1e1a1a;
+    border-color: #3a2a2a;
+    color: #a07060;
+  }
 
   /* allergen pill */
   .allergen-pill {
@@ -404,6 +437,7 @@ function buildRestaurant(r, items) {
         ${r.url ? `<a href="${r.url}" target="_blank">↗ profile</a>` : ''}
         ${r.info ? `<span style="color:#444">${r.info}</span>` : ''}
       </div>
+      ${r.info ? `<div class="restaurant-info">${escapeHtml(r.info)}</div>` : ''}
       ${buildTable(items)}
     </div>`;
 
@@ -431,12 +465,26 @@ function buildTable(items) {
       ? `<span class="item-desc">${escapeHtml(m.description)}</span>`
       : '';
 
+    // nutrition shown as small pills if present
+    let nutritionHtml = '';
+    if (m.nutrition) {
+      const n = m.nutrition;
+      const parts = [];
+      if (n.kcal)      parts.push(`<span class="nutr-pill nutr-kcal">${n.kcal} kcal</span>`);
+      if (n.protein_g) parts.push(`<span class="nutr-pill">P ${n.protein_g}g</span>`);
+      if (n.fat_g)     parts.push(`<span class="nutr-pill">F ${n.fat_g}g</span>`);
+      if (n.carbs_g)   parts.push(`<span class="nutr-pill">C ${n.carbs_g}g</span>`);
+      if (n.fiber_g)   parts.push(`<span class="nutr-pill">Fi ${n.fiber_g}g</span>`);
+      if (parts.length) nutritionHtml = `<div class="nutrition">${parts.join('')}</div>`;
+    }
+
     return `<tr class="${isError ? 'error-highlight' : ''}">
       <td><span class="type-badge type-${m.type}">${m.type}</span></td>
       <td>
         <div class="name-cell">
           <span class="item-name ${nameMissing ? 'missing' : ''}">${escapeHtml(m.name || '(empty)')}</span>
           ${descHtml}
+          ${nutritionHtml}
         </div>
       </td>
       <td class="weight ${!m.weight ? 'missing' : ''}">${m.weight || '—'}</td>

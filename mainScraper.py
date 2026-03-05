@@ -58,8 +58,9 @@ def extract_allergens(text):
     m = re.search(r'Alerg[eé]ny[:\s]+[-–]?\s*([0-9][0-9,\s]*)', text, re.IGNORECASE)
     if m:
         return [int(n) for n in re.findall(r'\d+', m.group(1)) if 1 <= int(n) <= 14]
+    # allergen parens: only match if content is digits/commas/spaces only (no letters or slashes like "1/4 kačice")
     m = re.search(r'[(/]([0-9][0-9,\s]*)[)/]', text)
-    if m:
+    if m and not re.search(r'[a-zA-ZáčďéíľňóšťúýžÁČĎÉÍĽŇÓŠŤÚÝŽ/]', m.group(1)):
         nums = [int(n) for n in re.findall(r'\d+', m.group(1)) if 1 <= int(n) <= 14]
         if nums: return nums
     # "A: 1, 6" or "A: 8" format (Bistro Sunshine)
@@ -67,12 +68,33 @@ def extract_allergens(text):
     if m:
         nums = [int(n) for n in re.findall(r'\d+', m.group(1)) if 1 <= int(n) <= 14]
         if nums: return nums
-    # bare inline allergens at end: "...ryža 1,3,7 7,50" (Geurud)
+    # "• 150/200g 1,3 | price" format (TriP) — allergens between bullet+weight and pipe
+    m = re.search(r'•[^|]*?\s([\d,]+)\s*\|', text)
+    if m:
+        nums = [int(n) for n in re.findall(r'\d+', m.group(1)) if 1 <= int(n) <= 14]
+        if nums: return nums
+    # "1,7 (0,33l)" — allergens before a liquid-weight paren (Tilia soup)
+    m = re.search(r'\s((?:\d{1,2},)+\d{1,2})\s+\(\d', text)
+    if m:
+        nums = [int(n) for n in re.findall(r'\d+', m.group(1)) if 1 <= int(n) <= 14]
+        if nums and all(1 <= n <= 14 for n in nums): return nums
+    # bare inline allergens at end: "...ryža 1,3,7 7,50" or "1,3,9" (Geurud, Central Gastro)
     m = re.search(r'(?:^|\s)((?:\d{1,2},)+\d{1,2})(?:\s+\d{1,2}[.,]\d{2}\s*(?:\w+)?)?\s*$', text)
     if m:
         nums = [int(n) for n in re.findall(r'\d+', m.group(1))]
         if nums and all(1 <= n <= 14 for n in nums):
             return nums
+    # single allergen at end — only if NOT preceded by a comma (so not tail of "1,3,9")
+    # matches "/ 11" or a space-separated lone number like "...kačica 7"
+    m = re.search(r'(?<![,\d])\s+(\d{1,2})\s*$', text)
+    if m:
+        n = int(m.group(1))
+        if 1 <= n <= 14: return [n]
+    # slash-prefixed single allergen: "/ 11"
+    m = re.search(r'/\s*(\d{1,2})\s*$', text)
+    if m:
+        n = int(m.group(1))
+        if 1 <= n <= 14: return [n]
     return []
 
 def extract_weight(text):
@@ -93,6 +115,8 @@ def clean_name(text):
     t = re.sub(r'^(?:BIZNIS\s+MENU|XXL|Menu\s+\w{1,2}|Polievka\s*(?:č\.)?\s*\d*|Dezert|Vegán)[.:\s]+', '', t, flags=re.IGNORECASE)
     # strip Gourmet-style "A 140/200 g": single uppercase letter + space + digit
     t = re.sub(r'^[A-Z]\s+(?=\d)', '', t)
+    # strip digit or letter label with or without space: "1. " "4.Word" "A.Word"
+    t = re.sub(r'^[A-Za-z0-9]\.\s*', '', t)
     # strip single-char/digit labels: "1.", "A:", "A : ", "P1 ", "B) "
     t = re.sub(r'^\w\s*[.:)]\s+', '', t)
     t = re.sub(r'^\w{1,2}[.:)\s]\s+', '', t)
@@ -109,6 +133,9 @@ def clean_name(text):
     t = re.sub(r'€\s*\d+[.,]\d{2}', '', t)              # €7.00 style
     t = re.sub(r'(?:€\s*)?\d+[.,]\d{2}\s*(?:€|EUR|eur|Eur)', '', t)
     t = re.sub(r'\d+,-\s*(?:€|EUR)', '', t)
+    # strip paren blocks containing letters FIRST — these are portion notes, not allergens
+    # e.g. "(1/4 kačice, 150, 200g)", "(za tepla)" — must happen before allergen block strip
+    t = re.sub(r'\s*\([^)]*[a-zA-ZáčďéíľňóšťúýžÁČĎÉÍĽŇÓŠŤÚÝŽ][^)]*\)', '', t)
     # strip allergen blocks
     t = re.sub(r'Alerg[eé]ny[:\s]*[-–]?\s*[0-9,\s]+', '', t, flags=re.IGNORECASE)
     t = re.sub(r'[(/]\s*[0-9][0-9,\s]*\s*[)/]', '', t)
@@ -124,12 +151,25 @@ def clean_name(text):
     t = re.sub(r'^\d+\s+ks\s+', '', t)
     # strip trailing notes like "cena bez polievky"
     t = re.sub(r'\s*cena\s+bez\s+polievky.*', '', t, flags=re.IGNORECASE)
+    # strip TriP-style "• allergens | price | note" suffix
+    t = re.sub(r'\s*•.*$', '', t)
+    # strip Tilia-style portion note in parens before weight: "(1/4 kačice, 150,"
+    t = re.sub(r'\s*\(\d[/\d,\s]*kačice[^)]*\)', '', t, flags=re.IGNORECASE)
+    # strip inline allergens before a paren group: "1,3,7 (150, 200g)" or "1,3,7 (1/4 kačice...)"
+    t = re.sub(r'\s+(?:\d{1,2},)+\d{1,2}\s+\(', ' (', t)
+    # strip trailing single allergen digit: "...hranolčekmi 3" or "...syrom 1"
+    t = re.sub(r'\s+\d{1,2}\s*$', '', t)
     # strip Sunshine-style allergen suffix ", A: 1, 6"
     t = re.sub(r',\s*A:\s*[\d,\s]+$', '', t)
-    # strip bare inline allergens like "1,3,7" or "1,3,7,10" at end (Geurud format)
-    t = re.sub(r'\s+(?:\d{1,2},)+\d{1,2}(?:\s+\d{1,2}[.,]\d{2})?\s*$', '', t)
+    # strip bare inline allergens like "1,3,7" or "1,3,7,10" at end, optionally followed by price
+    t = re.sub(r'\s+(?:\d{1,2},)+\d{1,2}(?:\s+\d{1,2}[.,]\d{2}(?:\s*(?:€|EUR|eur|Eur))?)?\s*$', '', t)
     # strip bare trailing price with no unit (e.g. " 7,50" at end after name)
     t = re.sub(r'\s+\d{1,2}[.,]\d{2}\s*$', '', t)
+    # strip "/ 11" or "/11" trailing allergen-after-slash
+    t = re.sub(r'\s*/\s*\d{1,2}\s*$', '', t)
+    # final pass: strip any leftover bare allergen sequence at end (e.g. after price was already stripped)
+    t = re.sub(r'\s+(?:\d{1,2},)+\d{1,2}\s*$', '', t)
+    t = re.sub(r'\s+\d{1,2}\s*$', '', t)  # lone trailing digit
     return re.sub(r'\s+', ' ', t).strip(" |–-,/.")
 
 def is_description_line(text):
@@ -156,10 +196,15 @@ def is_item_start(text):
     """Does this line start a new menu item?"""
     t = text.strip()
     if not t: return False
+    # macro/nutrition lines are NEVER item starts (e.g. "B:41g, T:9g, S:49g")
+    if re.match(r'^[BTSVL]:\d', t): return False
+    # kcal-only lines are never item starts
+    if re.match(r'^\(?\.?\d+\s*(?:kcal|cal)\b', t, re.IGNORECASE): return False
     # explicit item starters
     patterns = [
-        r'^\d+[.:]\s',                          # "1. " "2: "
+        r'^\d+[.:]\s*\S',                       # "1. " "2: " "4.Grill..."
         r'^\w[.:]\s',                            # "A. " "B: "
+        r'^[A-Za-z]\.\S',                        # "A.Word" no space (Stanley)
         r'^\w\s*:\s*\w',                        # "A: name" or "A : name" (Golden Eagle)
         r'^\w\)\s',                              # "A) "
         r'^(?:Menu|MENU)\s+\w',                 # "Menu 1:"
@@ -169,6 +214,7 @@ def is_item_start(text):
         r'^(?:Polievka\s*(?:č\.)?\s*\d*)[.:\s]', # "Polievka č.1."
         r'^\d+[.,]\d+\s*[lLgGdD]',             # "0,33l ..." volume at start (soup)
         r'^\d+\s*[gG]\s',                        # "300g Dish..."
+        r'^\d+(?:/\d+)+\s*[gG]\s',             # "120/200/60 g ..." multi-slash weight
         r'^[A-Z]\s+\d',                          # "A 140/200 g ..." (Gourmet)
     ]
     for pat in patterns:
@@ -212,6 +258,14 @@ def group_lines_into_items(lines):
 
 # ── item parsing ──────────────────────────────────────────────────────────────
 
+def parse_macro_line(line):
+    """Parse 'B:41g, T:9g, S:49g, Vl:0,8g' into nutrition dict."""
+    nutrition = {}
+    for key, field in [('B','protein_g'),('T','fat_g'),('S','carbs_g'),('Vl','fiber_g'),('E','kcal')]:
+        m = re.search(key + r':(\d+(?:[.,]\d+)?)\s*(?:g|kcal)?', line)
+        if m: nutrition[field] = float(m.group(1).replace(',','.'))
+    return nutrition if nutrition else None
+
 def parse_item(group):
     main = group["main_line"]
     extra = group["extra"]
@@ -224,17 +278,27 @@ def parse_item(group):
     weight    = extract_weight(main)  # weight from main line only
     name      = clean_name(main)
     kind      = classify_type(main)
+    # extract kcal from main line if present (e.g. "540 cal" at end)
+    main_kcal     = re.search(r'(\d+)\s*(?:kcal|cal)\b', main, re.IGNORECASE)
+    main_nutrition = {'kcal': int(main_kcal.group(1))} if main_kcal else {}
 
     # Build description from extra lines, skipping pure allergen/macro/translation lines
     desc_parts = []
+    nutrition = {}
     for line in extra:
         line = line.replace('\u00a0', ' ').strip()
         # skip pure allergen lines
         if re.match(r'^[Aa]lerg[eé]ny', line): continue
-        # skip macro lines
-        if re.match(r'^[BTSVL]:\d', line): continue
-        # skip kcal-only lines
-        if re.match(r'^\d+\s*(?:kcal|cal)\b', line, re.IGNORECASE): continue
+        # macro lines → parse into nutrition, skip from description
+        if re.match(r'^[BTSVL]:\d', line):
+            n = parse_macro_line(line)
+            if n: nutrition.update(n)
+            continue
+        # kcal-only lines → store as nutrition
+        km = re.match(r'^\(?.*?\)?\s*(\d+)\s*(?:kcal|cal)\b', line, re.IGNORECASE)
+        if km:
+            nutrition['kcal'] = int(km.group(1))
+            continue
         # skip English translation lines (start with /)
         if re.match(r'^/', line): continue
         # skip short label-only artifacts
@@ -251,6 +315,7 @@ def parse_item(group):
         if len(description) < 5:
             description = None
 
+    merged_nutrition = {**main_nutrition, **nutrition}  # extra overrides main if both have kcal
     return {
         "type":        kind,
         "name":        name,
@@ -258,6 +323,7 @@ def parse_item(group):
         "weight":      weight,
         "price_eur":   price,
         "allergens":   allergens,
+        "nutrition":   merged_nutrition if merged_nutrition else None,
         "raw":         main
     }
 
@@ -307,12 +373,18 @@ def scrape():
         info_p = h2.find_next_sibling("p")
         info   = info_p.get_text(" ", strip=True) if info_p else ""
 
-        # extract "cena komplet menu od X,XX€" from header/info area
+        # extract menu price from header area — try several patterns, take the first match
         menu_price = None
-        header_text = " ".join(s.get_text(" ", strip=True) for s in siblings[:3])
-        mp = re.search(r'(?:od|from)\s*(\d+[.,]\d{2})\s*(?:€|EUR|eur)?', header_text, re.IGNORECASE)
-        if mp:
-            menu_price = float(mp.group(1).replace(',', '.'))
+        header_text = " ".join(s.get_text(" ", strip=True) for s in siblings[:4])
+        for mp_pat in [
+            r'(?:od|from|za)\s*(\d+[.,]\d{2})\s*(?:€|EUR|eur)',   # "od 7,00€" / "za 6,99€"
+            r'^\s*(\d+[.,]\d{2})\s*(?:€|EUR)',                    # "6,65 € ..."
+            r'(\d+[.,]\d{2})\s*(?:€|EUR)',                         # any first price
+        ]:
+            mp = re.search(mp_pat, header_text, re.IGNORECASE)
+            if mp:
+                menu_price = float(mp.group(1).replace(',', '.'))
+                break
 
         raw_lines = []
         for s in siblings:
