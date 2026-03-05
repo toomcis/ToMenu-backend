@@ -27,7 +27,7 @@ app = FastAPI(
 # ── db helper ─────────────────────────────────────────────────────────────────
 
 def get_db():
-    conn = sqlite3.connect(DB_PATH)
+    conn = sqlite3.connect(DB_PATH, check_same_thread=False)
     conn.row_factory = sqlite3.Row
     # allow reads while a write is in progress — prevents lock errors
     conn.execute("PRAGMA journal_mode=WAL")
@@ -82,13 +82,18 @@ def row_to_dict(row):
         d["nutrition"] = parse_json_field(d["nutrition"])
     return d
 
-def latest_run_id(db: sqlite3.Connection, city_slug: str, on_date: str):
-    row = db.execute("""
+def latest_run_id(db: sqlite3.Connection, city_slug: str, on_date: str, source: str = None):
+    q = """
         SELECT sr.id FROM scrape_runs sr
         JOIN cities c ON c.id = sr.city_id
         WHERE c.slug = ? AND sr.date = ?
-        ORDER BY sr.id DESC LIMIT 1
-    """, (city_slug, on_date)).fetchone()
+    """
+    params = [city_slug, on_date]
+    if source:
+        q += " AND sr.source = ?"
+        params.append(source)
+    q += " ORDER BY sr.id DESC LIMIT 1"
+    row = db.execute(q, params).fetchone()
     return row["id"] if row else None
 
 # ── static + UI ───────────────────────────────────────────────────────────────
@@ -237,6 +242,31 @@ def get_menu(
 
     rows = db.execute(query, params).fetchall()
     return {"date": target_date, "count": len(rows), "offset": offset, "results": [row_to_dict(r) for r in rows]}
+
+
+@app.get("/api/{city}/week")
+def get_week(
+    city: str,
+    source: Optional[str] = Query(default=None),
+    db: sqlite3.Connection = Depends(get_db),
+    _: int = Depends(require_api_key),
+):
+    """Returns available dates and item counts for the current week."""
+    from datetime import date, timedelta
+    today  = date.today()
+    monday = today - timedelta(days=today.weekday())
+    week_dates = [(monday + timedelta(days=i)).isoformat() for i in range(5)]  # Mon-Fri
+
+    result = []
+    for d in week_dates:
+        run_id = latest_run_id(db, city, d, source)
+        count  = 0
+        if run_id:
+            count = db.execute(
+                "SELECT COUNT(*) FROM menu_items WHERE scrape_run_id=?", (run_id,)
+            ).fetchone()[0]
+        result.append({"date": d, "has_data": run_id is not None, "item_count": count})
+    return result
 
 # ── admin routes ──────────────────────────────────────────────────────────────
 
@@ -393,7 +423,7 @@ def admin_scrape(
 ):
     try:
         result = subprocess.run(
-            ["python", "-X", "utf8", "main.py"],
+            ["python", "-X", "utf8", "scrapers/namenu.scrape.py", "--today"],
             capture_output=True, text=True, timeout=300, encoding="utf-8"
         )
         if result.returncode != 0:
