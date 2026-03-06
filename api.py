@@ -99,6 +99,7 @@ def latest_run_id(db: sqlite3.Connection, city_slug: str, on_date: str, source: 
 # ── static + UI ───────────────────────────────────────────────────────────────
 
 app.mount("/static", StaticFiles(directory="static"), name="static")
+app.mount("/locales", StaticFiles(directory="webUI/locales"), name="locales")
 
 @app.get("/favicon.ico", include_in_schema=False)
 def favicon():

@@ -136,17 +136,17 @@
 <aside id="sidebar">
   <div id="logo">
     <div class="logo-text">namenu+</div>
-    <div class="logo-sub">admin dashboard</div>
+    <div class="logo-sub" data-i18n="sidebar.sub">admin dashboard</div>
   </div>
   <nav>
-    <div class="nav-section">data</div>
-    <div class="nav-item active" data-page="overview"><span class="icon">◈</span> Overview</div>
+    <div class="nav-section" data-i18n="nav.data">data</div>
+    <div class="nav-item active" data-page="overview" data-i18n="nav.overview"><span class="icon">◈</span> Overview</div>
     <div id="cities-nav"></div>
-    <div class="nav-section">browse</div>
-    <div class="nav-item" data-page="restaurants"><span class="icon">⌂</span> All Restaurants</div>
-    <div class="nav-section">system</div>
-    <div class="nav-item" data-page="scraper"><span class="icon">↻</span> Scraper</div>
-    <div class="nav-item" data-page="apikeys"><span class="icon">⚿</span> API Keys</div>
+    <div class="nav-section" data-i18n="nav.browse">browse</div>
+    <div class="nav-item" data-page="restaurants" data-i18n="nav.restaurants"><span class="icon">⌂</span> All Restaurants</div>
+    <div class="nav-section" data-i18n="nav.system">system</div>
+    <div class="nav-item" data-page="scraper" data-i18n="nav.scraper"><span class="icon">↻</span> Scraper</div>
+    <div class="nav-item" data-page="apikeys" data-i18n="nav.apikeys"><span class="icon">⚿</span> API Keys</div>
   </nav>
   <div id="sidebar-footer">
     <span id="status-dot"></span>
@@ -159,20 +159,21 @@
     <span id="page-title">Overview</span>
     <div id="topbar-right">
       <span id="topbar-date" style="font-size:11px;color:var(--text3)"></span>
-      <button class="btn btn-green" onclick="triggerScrape(this)">↻ Run scraper</button>
+      <button class="btn" id="lang-toggle" onclick="toggleLang()" style="font-size:10px;padding:4px 10px;letter-spacing:1px;">EN</button>
+      <button class="btn btn-green" onclick="triggerScrape(this)" id="btn-scrape">↻ Run scraper</button>
     </div>
   </div>
   <div id="content">
 
     <div class="page active" id="page-overview">
       <div class="stat-grid">
-        <div class="stat-card"><div class="stat-label">restaurants</div><div class="stat-value green" id="st-restaurants">—</div></div>
-        <div class="stat-card"><div class="stat-label">items today</div><div class="stat-value blue" id="st-items">—</div></div>
-        <div class="stat-card"><div class="stat-label">with delivery</div><div class="stat-value" id="st-delivery">—</div></div>
-        <div class="stat-card"><div class="stat-label">total scrape runs</div><div class="stat-value amber" id="st-runs">—</div></div>
+        <div class="stat-card"><div class="stat-label" data-i18n="stat.restaurants">restaurants</div><div class="stat-value green" id="st-restaurants">—</div></div>
+        <div class="stat-card"><div class="stat-label" data-i18n="stat.items">items today</div><div class="stat-value blue" id="st-items">—</div></div>
+        <div class="stat-card"><div class="stat-label" data-i18n="stat.delivery">with delivery</div><div class="stat-value" id="st-delivery">—</div></div>
+        <div class="stat-card"><div class="stat-label" data-i18n="stat.runs">total scrape runs</div><div class="stat-value amber" id="st-runs">—</div></div>
       </div>
       <div class="card">
-        <div class="card-title">recent scrape runs</div>
+        <div class="card-title" data-i18n="runs.title">recent scrape runs</div>
         <table class="tbl">
           <thead><tr><th>city</th><th>date</th><th>day</th><th>scraped at</th><th>items</th></tr></thead>
           <tbody id="runs-body"><tr><td colspan="5" class="empty">loading...</td></tr></tbody>
@@ -187,7 +188,7 @@
         <div id="day-tabs" style="display:flex;gap:4px;flex-wrap:wrap;"></div>
       </div>
       <div class="toolbar">
-        <input type="text" id="menu-search" placeholder="search dishes..." oninput="filterMenus()">
+        <input type="text" id="menu-search" placeholder="search dishes..." data-i18n="menus.search" oninput="filterMenus()">
         <button class="filter-btn active" data-type="all" onclick="setTypeFilter(this,'all')">all</button>
         <button class="filter-btn" data-type="soup" onclick="setTypeFilter(this,'soup')">soup</button>
         <button class="filter-btn" data-type="main" onclick="setTypeFilter(this,'main')">main</button>
@@ -246,10 +247,10 @@
 <!-- api key modal -->
 <div id="modal-overlay">
   <div id="modal">
-    <h3>new API key</h3>
+    <h3 data-i18n="modal.title">new API key</h3>
     <div class="form-group">
-      <label class="form-label">label</label>
-      <input class="form-input" type="text" id="key-label-input" placeholder="e.g. my phone app">
+      <label class="form-label" data-i18n="modal.label">label</label>
+      <input class="form-input" type="text" id="key-label-input" placeholder="e.g. my phone app" data-i18n="modal.placeholder">
     </div>
     <div id="key-result" style="display:none">
       <div style="font-size:11px;color:var(--amber);margin-bottom:6px">⚠ copy this now — it won't be shown again</div>
@@ -266,11 +267,11 @@
 <div id="key-gate">
   <div id="key-gate-box">
     <div style="font-size:20px;font-weight:700;color:var(--green);margin-bottom:4px">namenu+</div>
-    <div style="font-size:11px;color:var(--text3);margin-bottom:28px">Enter your API key to continue</div>
-    <div style="font-size:11px;color:var(--text2);margin-bottom:6px">API Key</div>
+    <div style="font-size:11px;color:var(--text3);margin-bottom:28px" data-i18n="gate.sub">Enter your API key to continue</div>
+    <div style="font-size:11px;color:var(--text2);margin-bottom:6px" data-i18n="gate.label">API Key</div>
     <input id="gate-input" type="password" autocomplete="off"
       style="width:100%;background:var(--bg2);border:1px solid var(--border2);color:var(--text);padding:10px 12px;font-family:var(--font);font-size:12px;border-radius:4px;outline:none;margin-bottom:8px;"
-      placeholder="paste your key here">
+      placeholder="paste your key here" data-i18n="gate.placeholder">
     <div id="gate-error" style="font-size:11px;color:var(--red);min-height:18px;margin-bottom:16px"></div>
     <button id="gate-btn" onclick="submitKey()"
       style="width:100%;font-family:var(--font);font-size:13px;padding:11px;background:var(--green-dim);border:1px solid var(--green);color:var(--green);border-radius:4px;cursor:pointer;">
@@ -712,6 +713,79 @@ function esc(str) {
   return String(str||'').replace(/&/g,'&amp;').replace(/</g,'&lt;').replace(/>/g,'&gt;');
 }
 
+// ── i18n ─────────────────────────────────────────────────────────────────────
+// Translations live in /webUI/locales/{lang}.json
+// FastAPI serves /webUI/ as static files so /locales/en.json works directly.
+
+const SUPPORTED_LANGS = ['en', 'sk', 'cs'];
+let uiLang = 'en';
+let T = {};
+
+function detectUiLang() {
+  const saved = localStorage.getItem('namenu_lang');
+  if (saved && SUPPORTED_LANGS.includes(saved)) return saved;
+  const browser = (navigator.language || 'en').toLowerCase();
+  if (browser.startsWith('sk')) return 'sk';
+  if (browser.startsWith('cs')) return 'cs';
+  return 'en';
+}
+
+async function loadUiLang(lang) {
+  try {
+    const res = await fetch(`/locales/${lang}.json`);
+    if (!res.ok) throw new Error();
+    T = await res.json();
+    uiLang = lang;
+    localStorage.setItem('namenu_lang', lang);
+  } catch {
+    if (lang !== 'en') {
+      const res = await fetch('/locales/en.json');
+      T = await res.json();
+      uiLang = 'en';
+    }
+  }
+}
+
+function ui(key) {
+  return T[key] ?? key;
+}
+
+function applyUiLang() {
+  // elements with data-i18n (text content)
+  document.querySelectorAll('[data-i18n]').forEach(el => {
+    const k = el.dataset.i18n;
+    if (!k) return;
+    if (el.tagName === 'INPUT') {
+      el.placeholder = ui(k);
+    } else {
+      el.textContent = ui(k);
+    }
+  });
+
+  // nav items: keep the icon span, replace only the text node after it
+  document.querySelectorAll('.nav-item[data-i18n]').forEach(el => {
+    const icon = el.querySelector('.icon');
+    const key  = el.dataset.i18n;
+    el.childNodes.forEach(n => {
+      if (n.nodeType === 3 /* TEXT_NODE */) n.textContent = ' ' + ui(key);
+    });
+  });
+
+  // update lang toggle button — shows current lang uppercased from uiLang
+  const btn = document.getElementById('lang-toggle');
+  if (btn) btn.textContent = uiLang.toUpperCase();
+
+  document.documentElement.lang = uiLang;
+}
+
+async function toggleLang() {
+  const cycle = { en: 'sk', sk: 'cs', cs: 'en' };
+  const next  = cycle[uiLang] || 'en';
+  await loadUiLang(next);
+  applyUiLang();
+}
+
+
 // ── init ──────────────────────────────────────────────────────────────────────
 document.getElementById('topbar-date').textContent = new Date().toLocaleDateString('en-GB', {
   weekday:'short', day:'2-digit', month:'short', year:'numeric'
@@ -719,11 +793,17 @@ document.getElementById('topbar-date').textContent = new Date().toLocaleDateStri
 checkStatus();
 setInterval(checkStatus, 30000);
 
-if (API_KEY) {
-  loadDashboard();
-} else {
-  showKeyGate();
-}
+(async () => {
+  uiLang = detectUiLang();
+  await loadUiLang(uiLang);
+  applyUiLang();
+
+  if (API_KEY) {
+    loadDashboard();
+  } else {
+    showKeyGate();
+  }
+})();
 </script>
 </body>
 </html>
