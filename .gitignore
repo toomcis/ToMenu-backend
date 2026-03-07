@@ -5,6 +5,10 @@ namenu.db
 # random files i want gone
 old_main.py
 
+# fuckass files
+node_modules/
+.wrangler/
+
 # Byte-compiled / optimized / DLL files
 __pycache__/
 *.py[codz]

@@ -1,0 +1,12 @@
+name = "tomenu-auth"
+main = "src/index.js"
+compatibility_date = "2025-01-01"
+
+[[d1_databases]]
+binding = "DB"
+database_name = "tomenu-users"
+database_id = "6e23fecb-ca41-46a2-af19-d1cd6e0e0be5"
+
+[[kv_namespaces]]
+binding = "RATE_LIMITS"
+id = "774b86a08b2c4255b0cea6aa73287eb7"
