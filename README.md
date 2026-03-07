@@ -1,17 +1,17 @@
-# namenu+ &nbsp;[![beta](https://img.shields.io/badge/status-beta-yellow)](https://namenuplus.toomcis.eu) [![license](https://img.shields.io/badge/license-MIT-blue)](./LICENSE)
+# ToMenu &nbsp;[![beta](https://img.shields.io/badge/status-beta-yellow)](https://tomenu.sk) [![license](https://img.shields.io/badge/license-MIT-blue)](./LICENSE)
 
 > Structured lunch menus from Slovak restaurants, served as a clean REST API.
 
-namenu+ scrapes daily lunch menus from [namenu.sk](https://namenu.sk) and exposes them via a JSON API. Filter by city, day, allergens, price, and delivery availability. Built to be self-hostable and easy to extend with new cities or scraper sources.
+ToMenu scrapes daily lunch menus from Slovak restaurants and exposes them via a JSON API. Filter by city, day, allergens, price, and delivery availability. Built to be self-hostable and easy to extend with new cities or scraper sources.
 
-**Currently covering:** Levice 🇸🇰 — more cities as namenu.sk expands.
+**Currently covering:** Levice 🇸🇰 — more cities as the project expands.
 
 ---
 
 ## Project structure
 
 ```
-namenuPlus/
+tomenu/
 ├── api.py                      # FastAPI REST API + admin dashboard
 ├── main.py                     # CLI — key management & scrape log
 ├── scrapeAll.sh                # runs all scrapers in sequence
@@ -52,7 +52,7 @@ This keeps auth data separate from scraped data — you can wipe `namenu.db` wit
 
 ## API
 
-**Base URL:** `https://api.toomcis.eu`
+**Base URL:** `https://api.tomenu.sk`
 
 All requests require an `Authorization` header containing your API key.
 
@@ -83,43 +83,43 @@ Authorization: your-api-key-here
 | `limit`             | `int`                   | Max results (default 50, max 200)                |
 | `offset`            | `int`                   | Pagination offset                                |
 
-Full API docs available at [namenuplus.toomcis.eu](https://namenuplus.toomcis.eu)
+Full API docs: [tomenu.sk/api](https://tomenu.sk/api)
 
 ---
 
 ## Getting an API key
 
-namenu+ uses private API keys to prevent abuse. Keys are **free** and issued manually.
+ToMenu uses API keys to prevent abuse. Keys are **free** and issued manually.
 
-The easiest way is to visit [namenuplus.toomcis.eu](https://namenuplus.toomcis.eu), scroll to the bottom, and use the email template button — just fill in the blanks and send. Alternatively email [contact@toomcis.eu](mailto:contact@toomcis.eu?subject=namenu%2B%20API%20Key%20Request) directly.
+Visit [tomenu.sk/api](https://tomenu.sk/api), scroll to the bottom, and use the email template button. Alternatively email [contact@tomenu.sk](mailto:contact@tomenu.sk?subject=ToMenu%20API%20Key%20Request) directly.
 
 ---
 
 ## Self-hosting with Docker
 
-The recommended way to run namenu+ is via the published Docker image.
+The recommended way to run ToMenu is via the published Docker image.
 
 ### Quick start
 
 ```bash
 docker run -d \
-  --name namenuPlus-API \
+  --name tomenu-api \
   -p 2332:2332 \
   -e PORT=2332 \
   -e MAIN_DB=/app/data/main.db \
   -e NAMENU_DB=/app/data/namenu.db \
-  -v namenu_data:/app/data \
-  ghcr.io/toomcis/namenuplus:latest
+  -v tomenu_data:/app/data \
+  ghcr.io/toomcis/tomenu:latest
 ```
 
 ### With docker-compose (recommended)
 
 ```yaml
 services:
-  namenuPlus:
-    image: ghcr.io/toomcis/namenuplus:latest
+  tomenu:
+    image: ghcr.io/toomcis/tomenu:latest
     restart: unless-stopped
-    container_name: namenuPlus-API
+    container_name: tomenu-api
     environment:
       - PORT=2332
       - MAIN_DB=/app/data/main.db
@@ -127,25 +127,25 @@ services:
     ports:
       - "2332:2332"
     volumes:
-      - namenu_data:/app/data
+      - tomenu_data:/app/data
 
 volumes:
-  namenu_data:
+  tomenu_data:
 ```
 
 ```bash
 docker compose up -d
 ```
 
-On first boot, watch the logs for your admin API key — it is printed clearly right before the server starts:
+On first boot, watch the logs for your admin API key:
 
 ```bash
-docker logs namenuPlus-API
+docker logs tomenu-api
 ```
 
 ```
 ==============================
- namenu+ ready
+ ToMenu ready
 ==============================
 API key created for 'admin':
   <your-key-here>
@@ -163,7 +163,7 @@ Save this — it won't be shown again.
 
 ### ⚠️ Keep your image up to date
 
-namenu+ is under active development. When self-hosting, **always pull the latest image** before reporting bugs or issues. The project is working toward automatic version detection — once implemented, your instance will warn you if it is behind the main branch without stopping functionality.
+ToMenu is under active development. Always pull the latest image before reporting bugs.
 
 ```bash
 docker compose pull && docker compose up -d
@@ -173,22 +173,20 @@ docker compose pull && docker compose up -d
 
 ## Admin dashboard
 
-The admin dashboard is available at `http://localhost:2332/` and is **intentionally not exposed publicly**. If you are proxying namenu+ behind a reverse proxy (nginx, Caddy, etc.), make sure to block or restrict access to `/` and `/admin/*` for any public-facing domain. Only allow those routes from your local network or trusted IPs.
+The admin dashboard is available at `http://localhost:2332/` and is **intentionally not exposed publicly**. If proxying behind nginx or Caddy, restrict access to `/` and `/admin/*` to local IPs only.
 
 Example nginx rule:
 
 ```nginx
 server {
-    server_name api.toomcis.eu;
+    server_name api.tomenu.sk;
 
-    # restrict dashboard and admin routes to local access only
     location ~ ^/(admin.*|)$ {
         allow 127.0.0.1;
         allow 192.168.0.0/16;
         deny all;
     }
 
-    # proxy everything else through
     location / {
         proxy_pass http://127.0.0.1:2332;
         proxy_set_header Host $host;
@@ -202,8 +200,8 @@ server {
 ## Local development
 
 ```bash
-git clone https://github.com/toomcis/namenuPlus.git
-cd namenuPlus
+git clone https://github.com/toomcis/tomenu.git
+cd tomenu
 
 pip install -r requirements.txt
 
@@ -255,8 +253,6 @@ python main.py --scrape-log           # show recent scrape audit log
    python -X utf8 scrapers/yoursite.scrape.py $ARGS
    ```
 
-The schema supports multiple sources per city per date via the `source` column on `scrape_runs` — re-scraping replaces data for that source, it does not stack.
-
 ---
 
 ## Database schema
@@ -283,9 +279,9 @@ menu_items    id, restaurant_id, scrape_run_id, type, name, description,
 
 ## Data & privacy
 
-namenu+ currently **does not collect any user data**. It only stores scraped restaurant and menu information from public sources.
+ToMenu currently **does not collect any user data**. It only stores scraped restaurant and menu information from public sources.
 
-In a future update, the backend will introduce **opt-in** anonymous usage data collection (e.g. popular dishes, peak usage times) to enable better recommendations and improve the overall experience. This will always be opt-in, clearly documented, and when self-hosting, all data stays entirely on your own machine.
+A future update will introduce **opt-in** anonymous usage data collection to enable better recommendations. This will always be opt-in, clearly documented, and when self-hosting, all data stays entirely on your own machine.
 
 ---
 
@@ -296,10 +292,11 @@ In a future update, the backend will introduce **opt-in** anonymous usage data c
 - [X] Admin dashboard with scrape history
 - [X] Allergen and price filtering
 - [X] EN / SK / CS localization
-- [ ] More cities as namenu.sk expands
-- [ ] Additional scraper sources beyond namenu.sk
-- [ ] Automatic version detection with behind-branch warnings
-- [ ] Webhook support — get notified when today's menu is scraped
+- [ ] User accounts with opt-in preferences
+- [ ] Personalised feed + swipe discovery
+- [ ] More cities
+- [ ] Additional scraper sources
+- [ ] Webhook support
 
 ---
 
@@ -307,12 +304,12 @@ In a future update, the backend will introduce **opt-in** anonymous usage data c
 
 PRs welcome, especially for:
 
-- **Translations** — if you can improve or fix `SK / CZ / EN` strings, edit the files in [`webUI/locales/`](webUI/locales/) and [`webUI/index.html`](webUI/index.html)
-- **New cities** — if you know of a city portal with structured lunch menus
-- **New scraper sources** — any Slovak or Czech lunch aggregator
-- **Parser improvements** — the namenu scraper handles many edge cases but there's always more
+- **Translations** — improve or fix `SK / CS / EN` strings in [`webUI/locales/`](webUI/locales/)
+- **New cities** — city portals with structured lunch menus
+- **New scraper sources** — Slovak or Czech lunch aggregators
+- **Parser improvements** — edge cases in the namenu scraper
 
-Open an issue before starting anything large so we can align first.
+Open an issue before starting anything large.
 
 ---
 

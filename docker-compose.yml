@@ -1,11 +1,11 @@
 services:
-  namenuPlus:
+  tomenu:
     build:
       context: .
       dockerfile: Dockerfile
-    image: ghcr.io/toomcis/namenuplus:latest
+    image: ghcr.io/toomcis/tomenu:latest
     restart: unless-stopped
-    container_name: namenuPlus-API
+    container_name: tomenu-api
     environment:
       - PORT=2332
       - MAIN_DB=/app/data/main.db
@@ -13,9 +13,9 @@ services:
     ports:
       - "2332:2332"
     volumes:
-      - namenu_data:/app/data   # persists both main.db and namenu.db
+      - tomenu_data:/app/data   # persists both main.db and namenu.db
     tty: true
     stdin_open: true
 
 volumes:
-  namenu_data:
+  tomenu_data:

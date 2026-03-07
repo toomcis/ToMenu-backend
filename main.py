@@ -1,4 +1,4 @@
-# main.py — CLI tool for namenu+ administration
+# main.py — CLI tool for ToMenu administration
 # main.db holds: api_keys, scrape_log (cross-scraper audit trail)
 # namenu.db (and future *.db) hold scraper-specific data
 #
@@ -155,7 +155,7 @@ if __name__ == "__main__":
     args = sys.argv[1:]
 
     if not args or args[0] in ("--help", "-h"):
-        print("namenu+ CLI")
+        print("ToMenu CLI")
         print("  python main.py --add-key <label>     create a new API key")
         print("  python main.py --list-keys            list all API keys")
         print("  python main.py --revoke-key <id>      revoke an API key")

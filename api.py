@@ -1,4 +1,4 @@
-# api.py - FastAPI app providing REST API for namenu.sk data
+# api.py - FastAPI app providing REST API for ToMenu data
 import sqlite3
 import hashlib
 import json
@@ -20,7 +20,7 @@ MAIN_DB   = os.environ.get("MAIN_DB",    "main.db")    # api keys, scrape_log
 NAMENU_DB = os.environ.get("NAMENU_DB",  "namenu.db")  # scraped menu data
 
 app = FastAPI(
-    title="namenu.sk API",
+    title="ToMenu API",
     description="Lunch menus from Slovak restaurants",
     version="0.1.0",
 )
