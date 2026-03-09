@@ -1,20 +1,58 @@
-// ToMenu Auth Worker — v2
-// Endpoints:
+// ToMenu Auth Worker — v3
+// ── Auth ──────────────────────────────────────────────────────────────────────
 //   POST   /auth/register
 //   POST   /auth/login
 //   POST   /auth/logout
 //   GET    /auth/me
-//   PATCH  /auth/me                  — update display_name (weekly cooldown) + nickname
-//   DELETE /auth/sessions            — revoke all sessions
-//   GET    /auth/verify-email        — ?token=<hex> magic link (from email button)
-//   POST   /auth/verify-email        — { email, code } manual code fallback
-//   POST   /auth/resend-verification — (auth required)
-//   POST   /auth/forgot-password     — { email }
-//   POST   /auth/reset-password      — { email, code, new_password }
-//   POST   /auth/totp/setup          — (auth required) → { secret, otpauth_url }
-//   POST   /auth/totp/confirm        — (auth required) { code } → enables 2FA
-//   POST   /auth/totp/verify         — { email, password, code } → full login w/ 2FA
-//   DELETE /auth/totp                — (auth required) { code } → disables 2FA
+//   PATCH  /auth/me         — display_name, nickname, bio, dietary_prefs, home_city
+//   DELETE /auth/sessions
+//   GET    /auth/verify-email
+//   POST   /auth/verify-email
+//   POST   /auth/resend-verification
+//   POST   /auth/forgot-password
+//   POST   /auth/reset-password
+//   POST   /auth/totp/setup
+//   POST   /auth/totp/confirm
+//   POST   /auth/totp/verify
+//   DELETE /auth/totp
+//   POST   /auth/oauth/google
+//   DELETE /auth/oauth/unlink
+//   GET    /auth/oauth/providers
+//   POST   /auth/fcm
+//   DELETE /auth/fcm
+//   GET    /auth/notify-prefs
+//   PATCH  /auth/notify-prefs
+// ── FYP ───────────────────────────────────────────────────────────────────────
+//   POST   /fyp/onboarding
+//   GET    /fyp/taste
+//   PATCH  /fyp/taste
+//   POST   /fyp/swipe
+//   GET    /fyp/feed
+//   GET    /fyp/history
+//   DELETE /fyp/history
+//   GET    /fyp/favorites
+//   POST   /fyp/favorites
+//   DELETE /fyp/favorites
+//   GET    /fyp/preferences
+//   PATCH  /fyp/preferences
+// ── Social ────────────────────────────────────────────────────────────────────
+//   POST   /social/follow/:nickname
+//   DELETE /social/follow/:nickname
+//   GET    /social/followers
+//   GET    /social/following
+//   GET    /social/feed
+// ── Profiles ──────────────────────────────────────────────────────────────────
+//   GET    /profile/:nickname
+// ── Reviews ───────────────────────────────────────────────────────────────────
+//   POST   /reviews
+//   GET    /reviews/:restaurant_slug?city=
+//   DELETE /reviews/:id
+// ── Share ─────────────────────────────────────────────────────────────────────
+//   GET    /share/restaurant?city=&restaurant=
+//   GET    /share/dish?city=&restaurant=&dish=
+// ── Internal ──────────────────────────────────────────────────────────────────
+//   POST   /internal/notify
+//   POST   /internal/notify-menu
 //   GET    /health
 
 const SESSION_TTL_DAYS           = 30;
@@ -169,7 +207,7 @@ async function handleUpdateProfile(request, env) {
   if (error) return cors(json({ error }, 401));
 
   const body = await parseBody(request);
-  const { display_name, nickname } = body || {};
+  const { display_name, nickname, bio, dietary_prefs, home_city, favorite_cuisine } = body || {};
   const updates = [], bindings = [];
 
   if (display_name !== undefined) {
@@ -204,6 +242,22 @@ async function handleUpdateProfile(request, env) {
       updates.push('nickname = ?', 'nickname_changed_at = ?');
       bindings.push(clean, new Date().toISOString());
     }
+  }
+
+  if (bio !== undefined) {
+    if (typeof bio !== 'string') return cors(json({ error: 'bio must be a string' }, 400));
+    if (bio.length > 200) return cors(json({ error: 'bio too long (max 200 chars)' }, 400));
+    updates.push('bio = ?'); bindings.push(bio.trim() || null);
+  }
+  if (dietary_prefs !== undefined) {
+    if (!Array.isArray(dietary_prefs)) return cors(json({ error: 'dietary_prefs must be an array' }, 400));
+    updates.push('dietary_prefs = ?'); bindings.push(JSON.stringify(dietary_prefs));
+  }
+  if (home_city !== undefined) {
+    updates.push('home_city = ?'); bindings.push(home_city || null);
+  }
+  if (favorite_cuisine !== undefined) {
+    updates.push('favorite_cuisine = ?'); bindings.push(favorite_cuisine || null);
   }
 
   if (!updates.length) return cors(json({ error: 'nothing to update' }, 400));
@@ -569,7 +623,8 @@ async function requireAuth(request, env) {
   if (error) return { error };
 
   const row = await env.DB.prepare(`
-    SELECT s.user_id, u.email, u.display_name, u.nickname, u.created_at,
+    SELECT s.user_id, u.email, u.display_name, u.nickname, u.bio,
+           u.dietary_prefs, u.home_city, u.created_at,
            u.is_premium, u.email_verified, u.totp_secret, u.totp_enabled,
            u.display_name_changed_at, u.nickname_changed_at
     FROM sessions s
@@ -602,6 +657,10 @@ function publicUser(u) {
     email:                   u.email,
     display_name:            u.display_name             ?? null,
     nickname:                u.nickname                 ?? null,
+    bio:                     u.bio                      ?? null,
+    dietary_prefs:           JSON.parse(u.dietary_prefs || '[]'),
+    home_city:               u.home_city                ?? null,
+    favorite_cuisine:        u.favorite_cuisine         ?? null,
     created_at:              u.created_at,
     is_premium:              !!u.is_premium,
     email_verified:          !!u.email_verified,
@@ -1098,11 +1157,648 @@ async function handleSetNotifyPrefs(request, env) {
   return cors(json({ ok: true, notify_enabled: !!notify_enabled, notify_time: notify_time ?? '10:30' }));
 }
 
+// ── FYP: Onboarding ───────────────────────────────────────────────────────────
+// POST /fyp/onboarding
+// { liked_tags: string[], city_slug?: string, favorite_restaurants?: { restaurant_slug, city_slug }[] }
+// Called once after registration. Saves taste profile + optional fav restaurants in one shot.
+async function handleFypOnboarding(request, env) {
+  const { user, error } = await requireAuth(request, env);
+  if (error) return cors(json({ error }, 401));
+
+  const body = await parseBody(request) || {};
+  const { liked_tags = [], city_slug, favorite_restaurants = [] } = body;
+
+  if (!Array.isArray(liked_tags))
+    return cors(json({ error: 'liked_tags must be an array' }, 400));
+
+  // Upsert taste profile
+  await env.DB.prepare(`
+    INSERT INTO user_taste_profile (user_id, liked_tags, disliked_tags, updated_at)
+    VALUES (?, ?, '[]', datetime('now'))
+    ON CONFLICT(user_id) DO UPDATE SET
+      liked_tags = excluded.liked_tags,
+      updated_at = datetime('now')
+  `).bind(user.id, JSON.stringify(liked_tags)).run();
+
+  // Upsert preferences (city if provided)
+  if (city_slug) {
+    await env.DB.prepare(`
+      INSERT INTO user_preferences (user_id, city_slug, updated_at)
+      VALUES (?, ?, datetime('now'))
+      ON CONFLICT(user_id) DO UPDATE SET
+        city_slug  = excluded.city_slug,
+        updated_at = datetime('now')
+    `).bind(user.id, city_slug).run();
+  }
+
+  // Insert favorite restaurants (up to 5, ignore dupes)
+  if (Array.isArray(favorite_restaurants) && favorite_restaurants.length > 0) {
+    const limited = favorite_restaurants.slice(0, 5);
+    await Promise.allSettled(
+      limited
+        .filter(r => r.restaurant_slug && r.city_slug)
+        .map(r =>
+          env.DB.prepare(`
+            INSERT OR IGNORE INTO user_favorites (user_id, restaurant_slug, city_slug)
+            VALUES (?, ?, ?)
+          `).bind(user.id, r.restaurant_slug, r.city_slug).run()
+        )
+    );
+  }
+
+  return cors(json({ ok: true, onboarded: true }));
+}
+
+// ── FYP: Get taste profile ────────────────────────────────────────────────────
+// GET /fyp/taste
+async function handleGetTaste(request, env) {
+  const { user, error } = await requireAuth(request, env);
+  if (error) return cors(json({ error }, 401));
+
+  const row = await env.DB.prepare(
+    'SELECT liked_tags, disliked_tags, updated_at FROM user_taste_profile WHERE user_id = ?'
+  ).bind(user.id).first();
+
+  return cors(json({
+    liked_tags:    row ? JSON.parse(row.liked_tags    || '[]') : [],
+    disliked_tags: row ? JSON.parse(row.disliked_tags || '[]') : [],
+    updated_at:    row?.updated_at ?? null,
+  }));
+}
+
+// ── FYP: Patch taste profile ──────────────────────────────────────────────────
+// PATCH /fyp/taste
+// { liked_tags?: string[], disliked_tags?: string[] }
+async function handlePatchTaste(request, env) {
+  const { user, error } = await requireAuth(request, env);
+  if (error) return cors(json({ error }, 401));
+
+  const body = await parseBody(request) || {};
+  const { liked_tags, disliked_tags } = body;
+
+  if (liked_tags    !== undefined && !Array.isArray(liked_tags))
+    return cors(json({ error: 'liked_tags must be an array' }, 400));
+  if (disliked_tags !== undefined && !Array.isArray(disliked_tags))
+    return cors(json({ error: 'disliked_tags must be an array' }, 400));
+
+  const updates = [], bindings = [];
+  if (liked_tags    !== undefined) { updates.push('liked_tags = ?');    bindings.push(JSON.stringify(liked_tags)); }
+  if (disliked_tags !== undefined) { updates.push('disliked_tags = ?'); bindings.push(JSON.stringify(disliked_tags)); }
+  if (!updates.length) return cors(json({ error: 'nothing to update' }, 400));
+
+  updates.push('updated_at = datetime(\'now\')');
+  bindings.push(user.id);
+
+  await env.DB.prepare(`
+    INSERT INTO user_taste_profile (user_id, liked_tags, disliked_tags, updated_at)
+    VALUES (?, ?, '[]', datetime('now'))
+    ON CONFLICT(user_id) DO UPDATE SET ${updates.join(', ')} WHERE user_id = ?
+  `).bind(
+    user.id,
+    JSON.stringify(liked_tags ?? []),
+    ...bindings
+  ).run();
+
+  return cors(json({ ok: true }));
+}
+
+// ── FYP: Record a swipe ───────────────────────────────────────────────────────
+// POST /fyp/swipe
+// { item_name, restaurant_slug, city_slug, direction: 'like'|'dislike'|'skip' }
+// Also updates taste profile liked_tags/disliked_tags based on dish tags if provided.
+async function handleSwipe(request, env) {
+  const { user, error } = await requireAuth(request, env);
+  if (error) return cors(json({ error }, 401));
+
+  const body = await parseBody(request) || {};
+  const { item_name, restaurant_slug, city_slug, direction, tags = [] } = body;
+
+  if (!item_name || !restaurant_slug || !city_slug)
+    return cors(json({ error: 'item_name, restaurant_slug and city_slug are required' }, 400));
+  if (!['like', 'dislike', 'skip'].includes(direction))
+    return cors(json({ error: 'direction must be like, dislike or skip' }, 400));
+
+  // Record swipe
+  await env.DB.prepare(`
+    INSERT INTO swipe_history (user_id, item_name, restaurant_slug, city_slug, direction)
+    VALUES (?, ?, ?, ?, ?)
+  `).bind(user.id, item_name, restaurant_slug, city_slug, direction).run();
+
+  // Update taste profile tags if provided and direction is like/dislike
+  if (Array.isArray(tags) && tags.length > 0 && direction !== 'skip') {
+    const profile = await env.DB.prepare(
+      'SELECT liked_tags, disliked_tags FROM user_taste_profile WHERE user_id = ?'
+    ).bind(user.id).first();
+
+    let liked    = new Set(JSON.parse(profile?.liked_tags    || '[]'));
+    let disliked = new Set(JSON.parse(profile?.disliked_tags || '[]'));
+
+    if (direction === 'like') {
+      tags.forEach(t => { liked.add(t); disliked.delete(t); });
+    } else {
+      tags.forEach(t => { disliked.add(t); liked.delete(t); });
+    }
+
+    await env.DB.prepare(`
+      INSERT INTO user_taste_profile (user_id, liked_tags, disliked_tags, updated_at)
+      VALUES (?, ?, ?, datetime('now'))
+      ON CONFLICT(user_id) DO UPDATE SET
+        liked_tags    = excluded.liked_tags,
+        disliked_tags = excluded.disliked_tags,
+        updated_at    = datetime('now')
+    `).bind(user.id, JSON.stringify([...liked]), JSON.stringify([...disliked])).run();
+  }
+
+  return cors(json({ ok: true, direction }));
+}
+
+// ── FYP: Get feed ─────────────────────────────────────────────────────────────
+// GET /fyp/feed?city=levice&limit=20
+// Fetches today's menu from api.tomenu.sk, scores each dish against the user's
+// taste profile and swipe history, returns ranked list ready for the card stack.
+async function handleFeed(request, env) {
+  const { user, error } = await requireAuth(request, env);
+  if (error) return cors(json({ error }, 401));
+
+  const url    = new URL(request.url);
+  const limit  = Math.min(parseInt(url.searchParams.get('limit') || '20'), 50);
+
+  // Resolve city: query param → user preferences → default 'levice'
+  let city = url.searchParams.get('city');
+  if (!city) {
+    const prefs = await env.DB.prepare(
+      'SELECT city_slug FROM user_preferences WHERE user_id = ?'
+    ).bind(user.id).first();
+    city = prefs?.city_slug || 'levice';
+  }
+
+  // Load user taste profile
+  const profile = await env.DB.prepare(
+    'SELECT liked_tags, disliked_tags FROM user_taste_profile WHERE user_id = ?'
+  ).bind(user.id).first();
+  const likedTags    = new Set(JSON.parse(profile?.liked_tags    || '[]'));
+  const dislikedTags = new Set(JSON.parse(profile?.disliked_tags || '[]'));
+
+  // Load recently swiped item names (last 200) to avoid reshowing them
+  const recentSwipes = await env.DB.prepare(`
+    SELECT item_name FROM swipe_history
+    WHERE user_id = ? AND city_slug = ?
+    ORDER BY swiped_at DESC LIMIT 200
+  `).bind(user.id, city).all();
+  const seenItems = new Set(recentSwipes.results.map(r => r.item_name));
+
+  // Fetch today's menu from the public API (no auth needed for read)
+  let menuItems = [];
+  try {
+    const apiUrl  = `https://api.tomenu.sk/api/${encodeURIComponent(city)}/menu?limit=200`;
+    const apiRes  = await fetch(apiUrl, {
+      headers: { 'Authorization': env.INTERNAL_SECRET || '' }
+    });
+    if (apiRes.ok) {
+      const data = await apiRes.json();
+      menuItems  = data.results || data || [];
+    }
+  } catch (e) {
+    console.error('Feed API fetch failed:', e.message);
+  }
+
+  // Score each dish
+  const scored = menuItems
+    .filter(item => !seenItems.has(item.name))
+    .map(item => {
+      let score = 0;
+      const itemTags = item.tags || [];
+
+      // +3 for each liked tag match
+      itemTags.forEach(t => { if (likedTags.has(t))    score += 3; });
+      // -5 for each disliked tag match (stronger penalty)
+      itemTags.forEach(t => { if (dislikedTags.has(t)) score -= 5; });
+      // Small random noise so identical-score items vary between sessions
+      score += Math.random() * 0.5;
+
+      return { ...item, _score: score };
+    })
+    .filter(item => item._score > -3) // drop heavily disliked items
+    .sort((a, b) => b._score - a._score)
+    .slice(0, limit)
+    .map(({ _score, ...item }) => item); // strip internal score field
+
+  return cors(json({
+    city,
+    count: scored.length,
+    items: scored,
+  }));
+}
+
+// ── FYP: Get swipe history ────────────────────────────────────────────────────
+// GET /fyp/history?limit=50&direction=like
+async function handleGetHistory(request, env) {
+  const { user, error } = await requireAuth(request, env);
+  if (error) return cors(json({ error }, 401));
+
+  const url       = new URL(request.url);
+  const limit     = Math.min(parseInt(url.searchParams.get('limit') || '50'), 200);
+  const direction = url.searchParams.get('direction'); // like | dislike | skip | null (all)
+
+  let query  = 'SELECT * FROM swipe_history WHERE user_id = ?';
+  const args = [user.id];
+  if (direction && ['like', 'dislike', 'skip'].includes(direction)) {
+    query += ' AND direction = ?';
+    args.push(direction);
+  }
+  query += ' ORDER BY swiped_at DESC LIMIT ?';
+  args.push(limit);
+
+  const rows = await env.DB.prepare(query).bind(...args).all();
+  return cors(json({ history: rows.results }));
+}
+
+// ── FYP: Clear swipe history ──────────────────────────────────────────────────
+// DELETE /fyp/history
+async function handleClearHistory(request, env) {
+  const { user, error } = await requireAuth(request, env);
+  if (error) return cors(json({ error }, 401));
+
+  const result = await env.DB.prepare(
+    'DELETE FROM swipe_history WHERE user_id = ?'
+  ).bind(user.id).run();
+
+  return cors(json({ ok: true, deleted: result.meta?.changes ?? 0 }));
+}
+
+// ── FYP: Get favorites ────────────────────────────────────────────────────────
+// GET /fyp/favorites
+async function handleGetFavorites(request, env) {
+  const { user, error } = await requireAuth(request, env);
+  if (error) return cors(json({ error }, 401));
+
+  const rows = await env.DB.prepare(
+    'SELECT restaurant_slug, city_slug, saved_at FROM user_favorites WHERE user_id = ? ORDER BY saved_at DESC'
+  ).bind(user.id).all();
+
+  return cors(json({ favorites: rows.results }));
+}
+
+// ── FYP: Add favorite ─────────────────────────────────────────────────────────
+// POST /fyp/favorites  { restaurant_slug, city_slug }
+async function handleAddFavorite(request, env) {
+  const { user, error } = await requireAuth(request, env);
+  if (error) return cors(json({ error }, 401));
+
+  const { restaurant_slug, city_slug } = await parseBody(request) || {};
+  if (!restaurant_slug || !city_slug)
+    return cors(json({ error: 'restaurant_slug and city_slug are required' }, 400));
+
+  try {
+    await env.DB.prepare(`
+      INSERT INTO user_favorites (user_id, restaurant_slug, city_slug)
+      VALUES (?, ?, ?)
+    `).bind(user.id, restaurant_slug, city_slug).run();
+  } catch {
+    // UNIQUE constraint — already a favorite, not an error
+  }
+
+  return cors(json({ ok: true }));
+}
+
+// ── FYP: Remove favorite ──────────────────────────────────────────────────────
+// DELETE /fyp/favorites  { restaurant_slug, city_slug }
+async function handleRemoveFavorite(request, env) {
+  const { user, error } = await requireAuth(request, env);
+  if (error) return cors(json({ error }, 401));
+
+  const { restaurant_slug, city_slug } = await parseBody(request) || {};
+  if (!restaurant_slug || !city_slug)
+    return cors(json({ error: 'restaurant_slug and city_slug are required' }, 400));
+
+  await env.DB.prepare(
+    'DELETE FROM user_favorites WHERE user_id = ? AND restaurant_slug = ? AND city_slug = ?'
+  ).bind(user.id, restaurant_slug, city_slug).run();
+
+  return cors(json({ ok: true }));
+}
+
+// ── FYP: Get preferences ──────────────────────────────────────────────────────
+// GET /fyp/preferences
+async function handleGetPreferences(request, env) {
+  const { user, error } = await requireAuth(request, env);
+  if (error) return cors(json({ error }, 401));
+
+  const row = await env.DB.prepare(
+    'SELECT city_slug, language, max_price, exclude_allergens, delivery_only, updated_at FROM user_preferences WHERE user_id = ?'
+  ).bind(user.id).first();
+
+  return cors(json({
+    city_slug:         row?.city_slug         ?? null,
+    language:          row?.language          ?? 'sk',
+    max_price:         row?.max_price         ?? null,
+    exclude_allergens: row?.exclude_allergens  ? JSON.parse(row.exclude_allergens) : [],
+    delivery_only:     !!row?.delivery_only,
+    updated_at:        row?.updated_at        ?? null,
+  }));
+}
+
+// ── FYP: Patch preferences ────────────────────────────────────────────────────
+// PATCH /fyp/preferences  { city_slug?, language?, max_price?, exclude_allergens?, delivery_only? }
+async function handlePatchPreferences(request, env) {
+  const { user, error } = await requireAuth(request, env);
+  if (error) return cors(json({ error }, 401));
+
+  const body = await parseBody(request) || {};
+  const { city_slug, language, max_price, exclude_allergens, delivery_only } = body;
+
+  const updates = [], bindings = [];
+  if (city_slug         !== undefined) { updates.push('city_slug = ?');         bindings.push(city_slug); }
+  if (language          !== undefined) { updates.push('language = ?');           bindings.push(language); }
+  if (max_price         !== undefined) { updates.push('max_price = ?');          bindings.push(max_price ?? null); }
+  if (exclude_allergens !== undefined) { updates.push('exclude_allergens = ?');  bindings.push(JSON.stringify(exclude_allergens)); }
+  if (delivery_only     !== undefined) { updates.push('delivery_only = ?');      bindings.push(delivery_only ? 1 : 0); }
+  if (!updates.length) return cors(json({ error: 'nothing to update' }, 400));
+
+  updates.push('updated_at = datetime(\'now\')');
+
+  await env.DB.prepare(`
+    INSERT INTO user_preferences (user_id, city_slug, language, max_price, exclude_allergens, delivery_only, updated_at)
+    VALUES (?, ?, 'sk', NULL, '[]', 0, datetime('now'))
+    ON CONFLICT(user_id) DO UPDATE SET ${updates.join(', ')}
+  `).bind(user.id, city_slug ?? null, ...bindings).run();
+
+  return cors(json({ ok: true }));
+}
+
 // ── Cron: daily lunch reminder ────────────────────────────────────────────────
 // Runs every minute via Cloudflare cron trigger.
 // Add to wrangler.toml:
 //   [triggers]
 //   crons = ["* * * * *"]
+
+// ── Social: Follow ────────────────────────────────────────────────────────────
+
+async function handleFollow(request, env) {
+  const { user, error } = await requireAuth(request, env);
+  if (error) return cors(json({ error }, 401));
+  const nickname = request.url.split('/social/follow/')[1]?.split('?')[0];
+  if (!nickname) return cors(json({ error: 'nickname required' }, 400));
+  const target = await env.DB.prepare('SELECT id FROM users WHERE nickname = ?').bind(nickname).first();
+  if (!target) return cors(json({ error: 'user not found' }, 404));
+  if (target.id === user.id) return cors(json({ error: 'cannot follow yourself' }, 400));
+  await env.DB.prepare(
+    'INSERT OR IGNORE INTO user_follows (follower_id, following_id) VALUES (?, ?)'
+  ).bind(user.id, target.id).run();
+  // Send push notification to target
+  notifyFollowed(env, target.id, user.display_name || user.nickname || 'Someone').catch(console.error);
+  return cors(json({ ok: true, following: nickname }));
+}
+
+async function handleUnfollow(request, env) {
+  const { user, error } = await requireAuth(request, env);
+  if (error) return cors(json({ error }, 401));
+  const nickname = request.url.split('/social/follow/')[1]?.split('?')[0];
+  if (!nickname) return cors(json({ error: 'nickname required' }, 400));
+  const target = await env.DB.prepare('SELECT id FROM users WHERE nickname = ?').bind(nickname).first();
+  if (!target) return cors(json({ error: 'user not found' }, 404));
+  await env.DB.prepare('DELETE FROM user_follows WHERE follower_id = ? AND following_id = ?')
+    .bind(user.id, target.id).run();
+  return cors(json({ ok: true, unfollowed: nickname }));
+}
+
+async function handleGetFollowers(request, env) {
+  const { user, error } = await requireAuth(request, env);
+  if (error) return cors(json({ error }, 401));
+  const rows = await env.DB.prepare(`
+    SELECT u.nickname, u.display_name, u.bio, f.created_at
+    FROM user_follows f JOIN users u ON u.id = f.follower_id
+    WHERE f.following_id = ? ORDER BY f.created_at DESC LIMIT 100
+  `).bind(user.id).all();
+  return cors(json({ followers: rows.results }));
+}
+
+async function handleGetFollowing(request, env) {
+  const { user, error } = await requireAuth(request, env);
+  if (error) return cors(json({ error }, 401));
+  const rows = await env.DB.prepare(`
+    SELECT u.nickname, u.display_name, u.bio, f.created_at
+    FROM user_follows f JOIN users u ON u.id = f.following_id
+    WHERE f.follower_id = ? ORDER BY f.created_at DESC LIMIT 100
+  `).bind(user.id).all();
+  return cors(json({ following: rows.results }));
+}
+
+// ── Public Profile ────────────────────────────────────────────────────────────
+
+async function handlePublicProfile(request, env) {
+  const nickname = request.url.split('/profile/')[1]?.split('?')[0];
+  if (!nickname) return cors(json({ error: 'nickname required' }, 400));
+
+  const u = await env.DB.prepare(`
+    SELECT id, display_name, nickname, bio, home_city, dietary_prefs, favorite_cuisine, created_at
+    FROM users WHERE nickname = ?
+  `).bind(nickname).first();
+  if (!u) return cors(json({ error: 'user not found' }, 404));
+
+  const [followersRow, followingRow, reviewsRows, favoritesRows] = await Promise.all([
+    env.DB.prepare('SELECT COUNT(*) as c FROM user_follows WHERE following_id = ?').bind(u.id).first(),
+    env.DB.prepare('SELECT COUNT(*) as c FROM user_follows WHERE follower_id = ?').bind(u.id).first(),
+    env.DB.prepare(`
+      SELECT id, restaurant_slug, city_slug, dish_name, rating, comment, created_at
+      FROM reviews WHERE user_id = ? ORDER BY created_at DESC LIMIT 20
+    `).bind(u.id).all(),
+    env.DB.prepare(`
+      SELECT restaurant_slug, city_slug, saved_at
+      FROM user_favorites WHERE user_id = ? ORDER BY saved_at DESC LIMIT 20
+    `).bind(u.id).all(),
+  ]);
+
+  // Foodie level based on review count
+  const reviewCount = reviewsRows.results.length;
+  const foodieLevel = reviewCount >= 50 ? 'Legend' :
+                      reviewCount >= 20 ? 'Gourmet' :
+                      reviewCount >= 10 ? 'Foodie' :
+                      reviewCount >= 3  ? 'Regular' : 'Newcomer';
+
+  return cors(json({
+    nickname:        u.nickname,
+    display_name:    u.display_name ?? null,
+    bio:             u.bio ?? null,
+    home_city:       u.home_city ?? null,
+    dietary_prefs:   JSON.parse(u.dietary_prefs || '[]'),
+    favorite_cuisine: u.favorite_cuisine ?? null,
+    followers_count: followersRow.c,
+    following_count: followingRow.c,
+    review_count:    reviewCount,
+    foodie_level:    foodieLevel,
+    member_since:    u.created_at,
+    reviews:         reviewsRows.results,
+    favorites:       favoritesRows.results,
+  }));
+}
+
+// ── Reviews ───────────────────────────────────────────────────────────────────
+
+async function handlePostReview(request, env) {
+  const { user, error } = await requireAuth(request, env);
+  if (error) return cors(json({ error }, 401));
+  const body = await parseBody(request);
+  const { restaurant_slug, city_slug, dish_name, rating, comment } = body || {};
+  if (!restaurant_slug || !city_slug) return cors(json({ error: 'restaurant_slug and city_slug required' }, 400));
+  if (!rating || rating < 1 || rating > 5) return cors(json({ error: 'rating must be 1–5' }, 400));
+  if (comment && comment.length > 500) return cors(json({ error: 'comment too long (max 500 chars)' }, 400));
+
+  const review = await env.DB.prepare(`
+    INSERT INTO reviews (user_id, restaurant_slug, city_slug, dish_name, rating, comment)
+    VALUES (?, ?, ?, ?, ?, ?) RETURNING *
+  `).bind(user.id, restaurant_slug, city_slug, dish_name || null, rating, comment || null).first();
+
+  // Log to activity feed
+  await env.DB.prepare(`
+    INSERT INTO activity_feed (user_id, type, restaurant_slug, city_slug, dish_name, review_id)
+    VALUES (?, 'reviewed', ?, ?, ?, ?)
+  `).bind(user.id, restaurant_slug, city_slug, dish_name || null, review.id).run();
+
+  return cors(json({ ok: true, review }, 201));
+}
+
+async function handleGetReviews(request, env) {
+  const url = new URL(request.url);
+  const parts = url.pathname.split('/reviews/');
+  const restaurant_slug = parts[1]?.split('?')[0];
+  if (!restaurant_slug) return cors(json({ error: 'restaurant_slug required' }, 400));
+  const city_slug = url.searchParams.get('city');
+  if (!city_slug) return cors(json({ error: 'city query param required' }, 400));
+
+  const rows = await env.DB.prepare(`
+    SELECT r.id, r.dish_name, r.rating, r.comment, r.created_at,
+           u.nickname, u.display_name
+    FROM reviews r JOIN users u ON u.id = r.user_id
+    WHERE r.restaurant_slug = ? AND r.city_slug = ?
+    ORDER BY r.created_at DESC LIMIT 50
+  `).bind(restaurant_slug, city_slug).all();
+
+  const avgRow = await env.DB.prepare(`
+    SELECT AVG(rating) as avg, COUNT(*) as total
+    FROM reviews WHERE restaurant_slug = ? AND city_slug = ?
+  `).bind(restaurant_slug, city_slug).first();
+
+  return cors(json({
+    restaurant_slug,
+    city_slug,
+    average_rating: avgRow.avg ? Math.round(avgRow.avg * 10) / 10 : null,
+    total_reviews:  avgRow.total,
+    reviews:        rows.results,
+  }));
+}
+
+async function handleDeleteReview(request, env) {
+  const { user, error } = await requireAuth(request, env);
+  if (error) return cors(json({ error }, 401));
+  const id = parseInt(request.url.split('/reviews/')[1]?.split('?')[0]);
+  if (!id) return cors(json({ error: 'review id required' }, 400));
+  const review = await env.DB.prepare('SELECT user_id FROM reviews WHERE id = ?').bind(id).first();
+  if (!review) return cors(json({ error: 'review not found' }, 404));
+  if (review.user_id !== user.id) return cors(json({ error: 'forbidden' }, 403));
+  await env.DB.batch([
+    env.DB.prepare('DELETE FROM reviews WHERE id = ?').bind(id),
+    env.DB.prepare('DELETE FROM activity_feed WHERE review_id = ?').bind(id),
+  ]);
+  return cors(json({ ok: true }));
+}
+
+// ── Activity Feed ─────────────────────────────────────────────────────────────
+
+async function handleGetActivityFeed(request, env) {
+  const { user, error } = await requireAuth(request, env);
+  if (error) return cors(json({ error }, 401));
+
+  // Get IDs of people the user follows
+  const followingRows = await env.DB.prepare(
+    'SELECT following_id FROM user_follows WHERE follower_id = ?'
+  ).bind(user.id).all();
+  const ids = followingRows.results.map(r => r.following_id);
+  if (ids.length === 0) return cors(json({ feed: [] }));
+
+  const placeholders = ids.map(() => '?').join(',');
+  const rows = await env.DB.prepare(`
+    SELECT a.type, a.restaurant_slug, a.city_slug, a.dish_name, a.created_at,
+           u.nickname, u.display_name,
+           r.rating, r.comment
+    FROM activity_feed a
+    JOIN users u ON u.id = a.user_id
+    LEFT JOIN reviews r ON r.id = a.review_id
+    WHERE a.user_id IN (${placeholders})
+    ORDER BY a.created_at DESC LIMIT 50
+  `).bind(...ids).all();
+
+  return cors(json({ feed: rows.results }));
+}
+
+// ── Share links ───────────────────────────────────────────────────────────────
+
+async function handleShareRestaurant(request, env) {
+  const url = new URL(request.url);
+  const city_slug       = url.searchParams.get('city');
+  const restaurant_slug = url.searchParams.get('restaurant');
+  if (!city_slug || !restaurant_slug) return cors(json({ error: 'city and restaurant params required' }, 400));
+  const shareUrl = `https://tomenu.sk/r/${city_slug}/${restaurant_slug}`;
+  return cors(json({ url: shareUrl }));
+}
+
+async function handleShareDish(request, env) {
+  const url  = new URL(request.url);
+  const city = url.searchParams.get('city');
+  const rest = url.searchParams.get('restaurant');
+  const dish = url.searchParams.get('dish');
+  if (!city || !rest || !dish) return cors(json({ error: 'city, restaurant and dish params required' }, 400));
+  const shareUrl = `https://tomenu.sk/r/${city}/${rest}?dish=${encodeURIComponent(dish)}`;
+  return cors(json({ url: shareUrl }));
+}
+
+// ── Notify: followed ─────────────────────────────────────────────────────────
+
+async function notifyFollowed(env, targetUserId, followerName) {
+  const tokens = await env.DB.prepare('SELECT token FROM fcm_tokens WHERE user_id = ?')
+    .bind(targetUserId).all();
+  if (!tokens.results.length) return;
+  const accessToken = await getFcmAccessToken(env);
+  await Promise.allSettled(tokens.results.map(r =>
+    sendFcmMessage(accessToken, env.FCM_PROJECT_ID, r.token,
+      '👤 New follower!',
+      `${followerName} started following you`,
+      { screen: 'profile' }
+    )
+  ));
+}
+
+// ── Notify: favorite restaurant posted menu ───────────────────────────────────
+
+async function handleNotifyFavMenu(request, env) {
+  const secret = request.headers.get('X-Internal-Secret');
+  if (!env.INTERNAL_SECRET || secret !== env.INTERNAL_SECRET)
+    return json({ error: 'forbidden' }, 403);
+
+  const { restaurant_slug, city_slug, restaurant_name } = await parseBody(request) || {};
+  if (!restaurant_slug || !city_slug) return json({ error: 'restaurant_slug and city_slug required' }, 400);
+
+  // Find all users who favorited this restaurant and have FCM tokens
+  const rows = await env.DB.prepare(`
+    SELECT DISTINCT f.token
+    FROM user_favorites uf
+    JOIN fcm_tokens f ON f.user_id = uf.user_id
+    WHERE uf.restaurant_slug = ? AND uf.city_slug = ?
+  `).bind(restaurant_slug, city_slug).all();
+
+  if (!rows.results.length) return json({ ok: true, sent: 0 });
+
+  const accessToken = await getFcmAccessToken(env);
+  const results = await Promise.allSettled(rows.results.map(r =>
+    sendFcmMessage(accessToken, env.FCM_PROJECT_ID, r.token,
+      '🍽️ Menu is ready!',
+      `${restaurant_name || restaurant_slug} just posted today's menu`,
+      { screen: 'restaurant', restaurant_slug, city_slug }
+    )
+  ));
+
+  return json({ ok: true, sent: results.filter(r => r.status === 'fulfilled').length });
+}
 
 export default {
   fetch: (request, env) => {
@@ -1136,6 +1832,44 @@ export default {
       if (method === 'GET'    && path === '/auth/notify-prefs')        return handleGetNotifyPrefs(request, env);
       if (method === 'PATCH'  && path === '/auth/notify-prefs')        return handleSetNotifyPrefs(request, env);
       if (method === 'GET'    && path === '/health')                   return cors(json({ ok: true }));
+
+      // ── FYP / Taste profile ──────────────────────────────────────────────────
+      if (method === 'POST'   && path === '/fyp/onboarding')           return handleFypOnboarding(request, env);
+      if (method === 'GET'    && path === '/fyp/taste')                return handleGetTaste(request, env);
+      if (method === 'PATCH'  && path === '/fyp/taste')                return handlePatchTaste(request, env);
+      if (method === 'POST'   && path === '/fyp/swipe')                return handleSwipe(request, env);
+      if (method === 'GET'    && path === '/fyp/feed')                 return handleFeed(request, env);
+      if (method === 'GET'    && path === '/fyp/history')              return handleGetHistory(request, env);
+      if (method === 'DELETE' && path === '/fyp/history')              return handleClearHistory(request, env);
+      if (method === 'GET'    && path === '/fyp/favorites')            return handleGetFavorites(request, env);
+      if (method === 'POST'   && path === '/fyp/favorites')            return handleAddFavorite(request, env);
+      if (method === 'DELETE' && path === '/fyp/favorites')            return handleRemoveFavorite(request, env);
+      if (method === 'GET'    && path === '/fyp/preferences')          return handleGetPreferences(request, env);
+      if (method === 'PATCH'  && path === '/fyp/preferences')          return handlePatchPreferences(request, env);
+
+      // ── Social ───────────────────────────────────────────────────────────────
+      if (method === 'POST'   && path.startsWith('/social/follow/'))   return handleFollow(request, env);
+      if (method === 'DELETE' && path.startsWith('/social/follow/'))   return handleUnfollow(request, env);
+      if (method === 'GET'    && path === '/social/followers')         return handleGetFollowers(request, env);
+      if (method === 'GET'    && path === '/social/following')         return handleGetFollowing(request, env);
+      if (method === 'GET'    && path === '/social/feed')              return handleGetActivityFeed(request, env);
+
+      // ── Public profile ───────────────────────────────────────────────────────
+      if (method === 'GET'    && path.startsWith('/profile/'))         return handlePublicProfile(request, env);
+
+      // ── Reviews ──────────────────────────────────────────────────────────────
+      if (method === 'POST'   && path === '/reviews')                  return handlePostReview(request, env);
+      if (method === 'GET'    && path.startsWith('/reviews/'))         return handleGetReviews(request, env);
+      if (method === 'DELETE' && path.startsWith('/reviews/'))         return handleDeleteReview(request, env);
+
+      // ── Share links ──────────────────────────────────────────────────────────
+      if (method === 'GET'    && path === '/share/restaurant')         return handleShareRestaurant(request, env);
+      if (method === 'GET'    && path === '/share/dish')               return handleShareDish(request, env);
+
+      // ── Internal ─────────────────────────────────────────────────────────────
+      if (method === 'POST'   && path === '/internal/notify')          return handleSendNotification(request, env);
+      if (method === 'POST'   && path === '/internal/notify-menu')     return handleNotifyFavMenu(request, env);
+
       return cors(json({ error: 'not found' }, 404));
     } catch (err) {
       console.error(err);
