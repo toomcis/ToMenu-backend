@@ -10,3 +10,9 @@ database_id = "6e23fecb-ca41-46a2-af19-d1cd6e0e0be5"
 [[kv_namespaces]]
 binding = "RATE_LIMITS"
 id = "774b86a08b2c4255b0cea6aa73287eb7"
+
+[triggers]
+crons = ["* * * * *"]
+
+# Secrets set via: npx wrangler secret put <NAME>
+# RESEND_API_KEY, GOOGLE_CLIENT_IDS, FCM_PROJECT_ID, FCM_CLIENT_EMAIL, FCM_PRIVATE_KEY, INTERNAL_SECRET
